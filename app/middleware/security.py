@@ -34,8 +34,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Política de referência
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
-        # Content Security Policy
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        # Content Security Policy - permite recursos do Swagger UI
+        path = str(request.url.path)
+        if path in ["/docs", "/redoc", "/openapi.json"] or path.startswith("/docs") or path.startswith("/redoc"):
+            # CSP mais permissivo para documentação
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https://fastapi.tiangolo.com; "
+                "font-src 'self' https://cdn.jsdelivr.net;"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
         
         # Remover header que expõe tecnologia do servidor
         if "server" in response.headers:
