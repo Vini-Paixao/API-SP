@@ -1,0 +1,36 @@
+services:
+  api-spfc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-spfc-calendario
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - API_KEY=${API_KEY}
+    env_file:
+      - .env
+    volumes:
+      # Volume para persistir cache de jogos entre restarts
+      - cache_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Limitar recursos (opcional)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+volumes:
+  cache_data:
+    name: spfc-cache-data
