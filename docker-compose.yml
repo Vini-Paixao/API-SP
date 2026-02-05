@@ -30,7 +30,14 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+    networks:
+      - npm_network
 
 volumes:
   cache_data:
     name: spfc-cache-data
+
+networks:
+  npm_network:
+    external: true
+    name: npm_network
