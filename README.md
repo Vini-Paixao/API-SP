@@ -34,7 +34,8 @@ cp .env.example .env
 Edite o arquivo `.env` com suas credenciais:
 
 ```env
-FIRECRAWL_API_KEY=fc-sua-api-key-aqui
+# Suporta múltiplas API keys para load-balance (separadas por vírgula)
+FIRECRAWL_API_KEYS=fc-key1,fc-key2,fc-key3
 API_KEY=sua-api-key-segura
 
 # CORS - seus domínios

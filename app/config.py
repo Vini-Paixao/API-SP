@@ -9,8 +9,8 @@ from typing import List
 class Settings(BaseSettings):
     """Configurações carregadas de variáveis de ambiente."""
     
-    # Firecrawl
-    firecrawl_api_key: str = ""
+    # Firecrawl - Suporta múltiplas API keys separadas por vírgula para load-balance
+    firecrawl_api_keys: str = ""  # Múltiplas keys separadas por vírgula
     firecrawl_max_retries: int = 3
     firecrawl_retry_delay: int = 5  # segundos
     
@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     
     # SPFC
     spfc_calendario_url: str = "https://www.saopaulofc.net/calendario-de-jogos/"
+    
+    @property
+    def firecrawl_api_key_list(self) -> List[str]:
+        """Retorna lista de API keys do Firecrawl."""
+        if not self.firecrawl_api_keys:
+            return []
+        return [key.strip() for key in self.firecrawl_api_keys.split(",") if key.strip()]
     
     class Config:
         env_file = ".env"

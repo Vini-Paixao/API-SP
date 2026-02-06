@@ -1025,9 +1025,10 @@ curl -v -H "Authorization: Bearer SUA_KEY_AQUI" http://localhost:8001/api/jogos
 **Causa:** Falha na comunicaÃ§Ã£o com Firecrawl.
 
 **SoluÃ§Ãµes:**
-1. Verificar `FIRECRAWL_API_KEY` no `.env`
-2. Verificar crÃ©ditos disponÃ­veis na conta Firecrawl
-3. API tentarÃ¡ 3x automaticamente com retry
+1. Verificar `FIRECRAWL_API_KEYS` no `.env`
+2. Verificar crÃ©ditos disponÃ­veis nas contas Firecrawl
+3. API tentarÃ¡ automaticamente com todas as keys configuradas
+4. Adicionar mais API keys para load-balance
 
 ### Cache nÃ£o atualiza
 
@@ -1062,7 +1063,7 @@ docker logs api-spfc-calendario
 
 | VariÃ¡vel | ObrigatÃ³ria | PadrÃ£o | DescriÃ§Ã£o |
 |----------|-------------|--------|-----------|
-| `FIRECRAWL_API_KEY` | Sim | - | Chave da API Firecrawl |
+| `FIRECRAWL_API_KEYS` | Sim | - | Chaves da API Firecrawl (separadas por vÃ­rgula para load-balance) |
 | `API_KEY` | Sim | - | Chave para autenticaÃ§Ã£o da API |
 | `RATE_LIMIT_REQUESTS` | NÃ£o | 30 | RequisiÃ§Ãµes por janela |
 | `RATE_LIMIT_WINDOW` | NÃ£o | 60 | Janela em segundos |
@@ -1074,8 +1075,8 @@ docker logs api-spfc-calendario
 ### Exemplo `.env`
 
 ```env
-# Firecrawl
-FIRECRAWL_API_KEY=fc-sua-chave-aqui
+# Firecrawl - MÃºltiplas keys para load-balance (quando uma fica sem crÃ©ditos, usa a prÃ³xima)
+FIRECRAWL_API_KEYS=fc-key1-aqui,fc-key2-aqui,fc-key3-aqui
 FIRECRAWL_MAX_RETRIES=3
 FIRECRAWL_RETRY_DELAY=5
 

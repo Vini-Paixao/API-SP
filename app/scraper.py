@@ -445,15 +445,32 @@ async def scrape_calendario(force_refresh: bool = False) -> tuple[List[Jogo], bo
     
     logger.info(f"🌐 Fazendo scraping de: {settings.spfc_calendario_url}")
     
-    # Retry automático
+    # Obter lista de API keys para load-balance
+    api_keys = settings.firecrawl_api_key_list
+    if not api_keys:
+        raise Exception("Nenhuma API key do Firecrawl configurada. Configure FIRECRAWL_API_KEYS no .env")
+    
+    logger.info(f"🔑 {len(api_keys)} API key(s) disponível(is) para load-balance")
+    
+    # Retry automático com rotação de API keys
     max_retries = settings.firecrawl_max_retries
     retry_delay = settings.firecrawl_retry_delay
     last_error = None
     
-    for attempt in range(1, max_retries + 1):
-        try:
-            # Inicializar Firecrawl
-            app = Firecrawl(api_key=settings.firecrawl_api_key)
+    # Total de tentativas = retries por key * número de keys
+    total_attempts = max_retries * len(api_keys)
+    attempt = 0
+    
+    for key_index, api_key in enumerate(api_keys):
+        key_label = f"Key {key_index + 1}/{len(api_keys)}"
+        
+        for retry in range(1, max_retries + 1):
+            attempt += 1
+            try:
+                logger.info(f"🔑 Usando {key_label} (tentativa {retry}/{max_retries})")
+                
+                # Inicializar Firecrawl com a key atual
+                app = Firecrawl(api_key=api_key)
             
             # Schema para extração estruturada
             schema = {
@@ -502,7 +519,7 @@ async def scrape_calendario(force_refresh: bool = False) -> tuple[List[Jogo], bo
                 prompt=prompt
             )
             
-            logger.info(f"✅ Extração concluída na tentativa {attempt}. Resultado: {resultado}")
+            logger.info(f"✅ Extração concluída com {key_label}! Resultado: {resultado}")
             
             # Extrair jogos do resultado
             jogos = extrair_jogos_do_resultado(resultado)
@@ -520,15 +537,34 @@ async def scrape_calendario(force_refresh: bool = False) -> tuple[List[Jogo], bo
             
         except Exception as e:
             last_error = e
-            logger.warning(f"⚠️ Tentativa {attempt}/{max_retries} falhou: {e}")
+            error_str = str(e).lower()
             
-            if attempt < max_retries:
+            # Detectar erro de créditos insuficientes
+            is_credit_error = any(x in error_str for x in [
+                "payment required", 
+                "insufficient credits",
+                "credit",
+                "402"
+            ])
+            
+            if is_credit_error:
+                logger.warning(f"⚠️ {key_label} sem créditos: {e}")
+                # Se tem mais keys, pula para a próxima key imediatamente
+                if key_index < len(api_keys) - 1:
+                    logger.info(f"🔄 Alternando para próxima API key...")
+                    break  # Sai do loop de retry para ir para próxima key
+                else:
+                    logger.warning(f"⚠️ Todas as API keys estão sem créditos!")
+            else:
+                logger.warning(f"⚠️ {key_label} tentativa {retry}/{max_retries} falhou: {e}")
+            
+            if retry < max_retries and not is_credit_error:
                 import time
                 logger.info(f"⏳ Aguardando {retry_delay}s antes de tentar novamente...")
                 time.sleep(retry_delay)
     
-    # Todas as tentativas falharam
-    logger.error(f"❌ Todas as {max_retries} tentativas falharam. Último erro: {last_error}")
+    # Todas as tentativas e keys falharam
+    logger.error(f"❌ Todas as {len(api_keys)} API key(s) falharam. Último erro: {last_error}")
     
     # Se falhar mas tiver cache, retornar cache mesmo expirado
     if cache_data:
