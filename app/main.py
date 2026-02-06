@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Versão da API
-API_VERSION = "1.1.0"
+API_VERSION = "2.0.0"
 
 
 class UTF8JSONResponse(JSONResponse):

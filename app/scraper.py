@@ -472,96 +472,96 @@ async def scrape_calendario(force_refresh: bool = False) -> tuple[List[Jogo], bo
                 # Inicializar Firecrawl com a key atual
                 app = Firecrawl(api_key=api_key)
             
-            # Schema para extração estruturada
-            schema = {
-                "type": "object",
-                "properties": {
-                    "jogos": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "competicao": {"type": "string", "description": "Nome da competição ou campeonato"},
-                                "adversario": {"type": "string", "description": "Nome do time adversário"},
-                                "adversario_logo": {"type": "string", "description": "URL da imagem/logo do adversário"},
-                                "data": {"type": "string", "description": "Data do jogo no formato DD/MM/YYYY"},
-                                "dia_semana": {"type": "string", "description": "Dia da semana"},
-                                "horario": {"type": "string", "description": "Horário do jogo no formato HH:MM"},
-                                "local": {"type": "string", "description": "Estádio ou local do jogo"},
-                                "mandante": {"type": "boolean", "description": "True se o São Paulo é o mandante/time da casa"}
-                            },
-                            "required": ["competicao", "adversario", "data", "horario"]
+                # Schema para extração estruturada
+                schema = {
+                    "type": "object",
+                    "properties": {
+                        "jogos": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "competicao": {"type": "string", "description": "Nome da competição ou campeonato"},
+                                    "adversario": {"type": "string", "description": "Nome do time adversário"},
+                                    "adversario_logo": {"type": "string", "description": "URL da imagem/logo do adversário"},
+                                    "data": {"type": "string", "description": "Data do jogo no formato DD/MM/YYYY"},
+                                    "dia_semana": {"type": "string", "description": "Dia da semana"},
+                                    "horario": {"type": "string", "description": "Horário do jogo no formato HH:MM"},
+                                    "local": {"type": "string", "description": "Estádio ou local do jogo"},
+                                    "mandante": {"type": "boolean", "description": "True se o São Paulo é o mandante/time da casa"}
+                                },
+                                "required": ["competicao", "adversario", "data", "horario"]
+                            }
                         }
                     }
                 }
-            }
-            
-            # Prompt para extração
-            prompt = """
-            Extraia TODOS os jogos do calendário do São Paulo FC que aparecem na página.
-            Para cada jogo, extraia:
-            - competicao: nome do campeonato/competição
-            - adversario: nome do time adversário (não incluir 'x' ou 'vs')
-            - adversario_logo: URL completa da imagem do escudo do adversário se disponível
-            - data: data do jogo no formato DD/MM/YYYY
-            - dia_semana: dia da semana (Segunda, Terça, etc)
-            - horario: horário no formato HH:MM
-            - local: nome do estádio
-            - mandante: true se São Paulo joga em casa, false se joga fora
-            
-            Inclua jogos futuros e próximos. Retorne uma lista completa de jogos.
-            """
-            
-            # Fazer extração estruturada usando o método extract
-            resultado = app.extract(
-                urls=[settings.spfc_calendario_url],
-                schema=schema,
-                prompt=prompt
-            )
-            
-            logger.info(f"✅ Extração concluída com {key_label}! Resultado: {resultado}")
-            
-            # Extrair jogos do resultado
-            jogos = extrair_jogos_do_resultado(resultado)
-            
-            # Preservar status de criado_no_calendario do cache anterior
-            if cache_data:
-                jogos = _preservar_status_calendario(jogos, cache_data)
-            
-            # Salvar no arquivo de cache
-            if jogos:
-                _salvar_cache_arquivo(jogos)
-                logger.info(f"✅ Cache atualizado com {len(jogos)} jogos")
-            
-            return jogos, False
-            
-        except Exception as e:
-            last_error = e
-            error_str = str(e).lower()
-            
-            # Detectar erro de créditos insuficientes
-            is_credit_error = any(x in error_str for x in [
-                "payment required", 
-                "insufficient credits",
-                "credit",
-                "402"
-            ])
-            
-            if is_credit_error:
-                logger.warning(f"⚠️ {key_label} sem créditos: {e}")
-                # Se tem mais keys, pula para a próxima key imediatamente
-                if key_index < len(api_keys) - 1:
-                    logger.info(f"🔄 Alternando para próxima API key...")
-                    break  # Sai do loop de retry para ir para próxima key
+                
+                # Prompt para extração
+                prompt = """
+                Extraia TODOS os jogos do calendário do São Paulo FC que aparecem na página.
+                Para cada jogo, extraia:
+                - competicao: nome do campeonato/competição
+                - adversario: nome do time adversário (não incluir 'x' ou 'vs')
+                - adversario_logo: URL completa da imagem do escudo do adversário se disponível
+                - data: data do jogo no formato DD/MM/YYYY
+                - dia_semana: dia da semana (Segunda, Terça, etc)
+                - horario: horário no formato HH:MM
+                - local: nome do estádio
+                - mandante: true se São Paulo joga em casa, false se joga fora
+                
+                Inclua jogos futuros e próximos. Retorne uma lista completa de jogos.
+                """
+                
+                # Fazer extração estruturada usando o método extract
+                resultado = app.extract(
+                    urls=[settings.spfc_calendario_url],
+                    schema=schema,
+                    prompt=prompt
+                )
+                
+                logger.info(f"✅ Extração concluída com {key_label}! Resultado: {resultado}")
+                
+                # Extrair jogos do resultado
+                jogos = extrair_jogos_do_resultado(resultado)
+                
+                # Preservar status de criado_no_calendario do cache anterior
+                if cache_data:
+                    jogos = _preservar_status_calendario(jogos, cache_data)
+                
+                # Salvar no arquivo de cache
+                if jogos:
+                    _salvar_cache_arquivo(jogos)
+                    logger.info(f"✅ Cache atualizado com {len(jogos)} jogos")
+                
+                return jogos, False
+                
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                
+                # Detectar erro de créditos insuficientes
+                is_credit_error = any(x in error_str for x in [
+                    "payment required", 
+                    "insufficient credits",
+                    "credit",
+                    "402"
+                ])
+                
+                if is_credit_error:
+                    logger.warning(f"⚠️ {key_label} sem créditos: {e}")
+                    # Se tem mais keys, pula para a próxima key imediatamente
+                    if key_index < len(api_keys) - 1:
+                        logger.info(f"🔄 Alternando para próxima API key...")
+                        break  # Sai do loop de retry para ir para próxima key
+                    else:
+                        logger.warning(f"⚠️ Todas as API keys estão sem créditos!")
                 else:
-                    logger.warning(f"⚠️ Todas as API keys estão sem créditos!")
-            else:
-                logger.warning(f"⚠️ {key_label} tentativa {retry}/{max_retries} falhou: {e}")
-            
-            if retry < max_retries and not is_credit_error:
-                import time
-                logger.info(f"⏳ Aguardando {retry_delay}s antes de tentar novamente...")
-                time.sleep(retry_delay)
+                    logger.warning(f"⚠️ {key_label} tentativa {retry}/{max_retries} falhou: {e}")
+                
+                if retry < max_retries and not is_credit_error:
+                    import time
+                    logger.info(f"⏳ Aguardando {retry_delay}s antes de tentar novamente...")
+                    time.sleep(retry_delay)
     
     # Todas as tentativas e keys falharam
     logger.error(f"❌ Todas as {len(api_keys)} API key(s) falharam. Último erro: {last_error}")
