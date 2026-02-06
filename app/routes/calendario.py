@@ -206,6 +206,66 @@ async def jogos_da_semana(
         )
 
 
+@router.get(
+    "/jogos/semana/pendentes",
+    response_model=CalendarioResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "API Key inválida"},
+        500: {"model": ErrorResponse, "description": "Erro interno"},
+    },
+    summary="Jogos da semana pendentes de criação",
+    description="""
+    Retorna jogos da semana que ainda NÃO foram adicionados ao Google Calendar.
+    
+    Combina os filtros de:
+    - Jogos das próximas N semanas
+    - Jogos ainda não criados no calendário (criado_no_calendario = false)
+    
+    Perfeito para workflow semanal do n8n:
+    1. Chamar este endpoint
+    2. Para cada jogo, criar evento no Calendar
+    3. Chamar POST /api/jogos/{jogo_id}/marcar-calendario
+    """
+)
+async def jogos_semana_pendentes(
+    semanas: int = Query(
+        1,
+        ge=1,
+        le=8,
+        description="Número de semanas a considerar (1-8)"
+    ),
+    force_refresh: bool = Query(
+        False, 
+        description="Se True, ignora o cache e faz novo scraping"
+    ),
+    _: bool = Depends(verificar_api_key)
+):
+    """Retorna jogos da semana que ainda não foram criados no calendário."""
+    try:
+        jogos, from_cache = await scrape_calendario(force_refresh=force_refresh)
+        
+        # Ordenar e filtrar jogos da semana
+        jogos = ordenar_jogos(jogos)
+        jogos = filtrar_jogos_semana(jogos, semanas=semanas)
+        
+        # Filtrar apenas não criados no calendário
+        jogos = [j for j in jogos if not j.criado_no_calendario]
+        
+        return CalendarioResponse(
+            sucesso=True,
+            total_jogos=len(jogos),
+            jogos=jogos,
+            atualizado_em=datetime.now(),
+            cache=from_cache
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao buscar jogos da semana pendentes: {str(e)}"
+        )
+
+
 @router.post(
     "/cache/limpar",
     response_model=dict,

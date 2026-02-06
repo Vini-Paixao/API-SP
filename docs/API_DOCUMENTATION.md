@@ -18,6 +18,7 @@
    - [Health Check](#health-check)
    - [Listar Jogos](#listar-jogos)
    - [Jogos da Semana](#jogos-da-semana)
+   - [Jogos da Semana Pendentes](#jogos-da-semana-pendentes)
    - [PrÃ³ximo Jogo](#prÃ³ximo-jogo)
    - [Jogos Pendentes](#jogos-pendentes)
    - [Jogos no CalendÃ¡rio](#jogos-no-calendÃ¡rio)
@@ -277,6 +278,62 @@ GET /api/jogos/semana?semanas=2
   "total_jogos": 4,
   "jogos": [...],
   "atualizado_em": "2026-02-04T15:00:00.000000",
+  "cache": true
+}
+```
+
+---
+
+### Jogos da Semana Pendentes
+
+Retorna jogos das prÃ³ximas N semanas que **NÃƒO** foram adicionados ao Google Calendar.
+
+**Ideal para workflow semanal do n8n** - combina filtro de semana + pendentes.
+
+```http
+GET /api/jogos/semana/pendentes
+```
+
+#### ParÃ¢metros Query
+
+| ParÃ¢metro | Tipo | PadrÃ£o | Range | DescriÃ§Ã£o |
+|-----------|------|--------|-------|-----------|
+| `semanas` | integer | `1` | 1-8 | NÃºmero de semanas |
+| `force_refresh` | boolean | `false` | - | Ignorar cache |
+
+#### Exemplo
+
+```http
+GET /api/jogos/semana/pendentes?semanas=1
+```
+
+#### Uso no n8n (Recomendado)
+
+Este endpoint Ã© o **ponto de entrada ideal** para workflows semanais:
+
+1. Trigger semanal (ex: toda segunda-feira)
+2. Chamar `/api/jogos/semana/pendentes`
+3. Para cada jogo, criar evento no Calendar
+4. Marcar jogo com `POST /api/jogos/{jogo_id}/marcar-calendario`
+
+#### Resposta
+
+```json
+{
+  "sucesso": true,
+  "total_jogos": 2,
+  "jogos": [
+    {
+      "jogo_id": "c144182ca543",
+      "adversario": "Primavera SAF",
+      "competicao": "Campeonato Paulista 2026",
+      "data": "07/02/2026",
+      "horario": "20:30",
+      "criado_no_calendario": false,
+      "google_event_id": null
+    }
+  ],
+  "atualizado_em": "2026-02-06T12:00:00.000000",
   "cache": true
 }
 ```
@@ -836,12 +893,18 @@ curl -X GET "http://localhost:8001/api/jogos/semana?semanas=2" \
   -H "Authorization: Bearer SUA_API_KEY_AQUI"
 ```
 
+#### Jogos da semana pendentes (recomendado para n8n)
+```bash
+curl -X GET "http://localhost:8001/api/jogos/semana/pendentes?semanas=1" \
+  -H "Authorization: Bearer SUA_API_KEY_AQUI"
+```
+
 #### Marcar jogo no calendÃ¡rio
 ```bash
 curl -X POST "http://localhost:8001/api/jogos/b22420564665/marcar-calendario" \
   -H "Authorization: Bearer SUA_API_KEY_AQUI" \
   -H "Content-Type: application/json" \
-  -d '{"jogo_id": "b22420564665", "google_event_id": "abc123"}'
+  -d '{"google_event_id": "abc123"}'
 ```
 
 #### Desmarcar jogo
