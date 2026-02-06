@@ -38,7 +38,6 @@ class Jogo(BaseModel):
 class MarcarJogoRequest(BaseModel):
     """Request para marcar jogo como criado no calendário."""
     
-    jogo_id: str = Field(..., description="ID único do jogo")
     google_event_id: Optional[str] = Field(None, description="ID do evento criado no Google Calendar")
 
 
