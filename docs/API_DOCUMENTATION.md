@@ -1088,10 +1088,10 @@ RATE_LIMIT_REQUESTS=30
 RATE_LIMIT_WINDOW=60
 
 # CORS (domÃ­nios do frontend/n8n)
-CORS_ORIGINS=https://marcuspaixao.com.br,https://n8n.marcuspaixao.com.br
+CORS_ORIGINS=https://seudominio.com.br,https://n8n.seudominio.com.br
 
 # Hosts (para produÃ§Ã£o)
-ALLOWED_HOSTS=api.marcuspaixao.com.br,localhost
+ALLOWED_HOSTS=api.seudominio.com.br,localhost
 ```
 
 > âš ï¸ **IMPORTANTE:** Nunca commite o arquivo `.env` no git! Use `.env.example` como template.
