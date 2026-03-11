@@ -404,6 +404,19 @@ def extrair_jogos_do_resultado(resultado: Any) -> List[Jogo]:
     except Exception as e:
         logger.error(f"Erro ao extrair jogos: {e}")
     
+    # Deduplicar jogos (o site exibe o próximo jogo em destaque no topo
+    # e novamente no calendário, causando duplicatas)
+    if jogos:
+        jogos_unicos = {}
+        for jogo in jogos:
+            if jogo.jogo_id not in jogos_unicos:
+                jogos_unicos[jogo.jogo_id] = jogo
+        
+        if len(jogos_unicos) < len(jogos):
+            logger.info(f"🔄 {len(jogos) - len(jogos_unicos)} jogo(s) duplicado(s) removido(s)")
+        
+        jogos = list(jogos_unicos.values())
+    
     return jogos
 
 
