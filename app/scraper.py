@@ -330,11 +330,14 @@ def extrair_jogos_do_resultado(resultado: Any) -> List[Jogo]:
     jogos = []
     
     try:
-        # Converter para dict se for objeto
-        if hasattr(resultado, '__dict__'):
-            dados = vars(resultado)
-        elif hasattr(resultado, 'data'):
-            dados = resultado.data if isinstance(resultado.data, dict) else {"jogos": []}
+        # Handle scrape result (extracted JSON in .json attribute)
+        json_data = getattr(resultado, 'json', None)
+        if json_data is not None and isinstance(json_data, dict):
+            dados = json_data
+        # Handle extract result (.data attribute with extracted data)
+        elif hasattr(resultado, 'data') and isinstance(resultado.data, dict):
+            dados = resultado.data
+        # Handle dict directly
         elif isinstance(resultado, dict):
             dados = resultado
         else:
@@ -512,11 +515,16 @@ async def scrape_calendario(force_refresh: bool = False) -> tuple[List[Jogo], bo
                 Inclua jogos futuros e próximos. Retorne uma lista completa de jogos.
                 """
                 
-                # Fazer extração estruturada usando o método extract
-                resultado = app.extract(
-                    urls=[settings.spfc_calendario_url],
-                    schema=schema,
-                    prompt=prompt
+                # Fazer extração estruturada usando scrape com formato JSON
+                # scrape renderiza JavaScript (ao contrário de extract),
+                # necessário pois o site do SPFC carrega jogos via JS
+                resultado = app.scrape(
+                    settings.spfc_calendario_url,
+                    formats=[{
+                        "type": "json",
+                        "schema": schema,
+                        "prompt": prompt
+                    }]
                 )
                 
                 logger.info(f"✅ Extração concluída com {key_label}! Resultado: {resultado}")

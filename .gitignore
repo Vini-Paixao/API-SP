@@ -81,3 +81,6 @@ logs/
 
 # Cache de jogos (persiste entre restarts, não commitado)
 data/cache_jogos.json
+
+# IA
+.claude/
