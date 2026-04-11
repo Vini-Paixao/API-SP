@@ -1085,6 +1085,59 @@ ALLOWED_HOSTS=api.seudominio.com.br,localhost
 
 ---
 
+## Endpoint: Jogo Ao Vivo Hoje
+
+Retorna um jogo do dia com status temporal para consumo em app.
+
+### Rota
+
+```http
+GET /api/jogos/hoje/ao-vivo
+```
+
+### Query Params
+
+| Param | Tipo | Padrão | Descrição |
+|-------|------|--------|-----------|
+| `force_refresh` | boolean | `false` | Se `true`, ignora cache e força scraping novo |
+
+### Status possíveis
+
+- `sem_jogo_hoje`
+- `planejado`
+- `ao_vivo`
+- `finalizado`
+
+### Exemplo
+
+```bash
+curl -X GET "http://localhost:8001/api/jogos/hoje/ao-vivo" \
+  -H "Authorization: Bearer SUA_API_KEY_AQUI"
+```
+
+### Exemplo de resposta
+
+```json
+{
+  "sucesso": true,
+  "jogo": {
+    "competicao": "Brasileirão 2026",
+    "adversario": "Chapecoense",
+    "data": "11/04/2026",
+    "horario": "20:00",
+    "data_iso": "2026-04-11T20:00:00-03:00",
+    "data_fim_iso": "2026-04-11T22:00:00-03:00",
+    "jogo_id": "100837d313c6"
+  },
+  "status_jogo": "ao_vivo",
+  "tempo_decorrido_minutos": 35,
+  "atualizado_em": "2026-04-11T20:35:00.000000",
+  "cache": true
+}
+```
+
+---
+
 ## Contato & Suporte
 
 - **Swagger UI:** http://seudominio:8001/docs

@@ -123,6 +123,118 @@ def filtrar_jogos_semana(jogos: List[Jogo], semanas: int = 1) -> List[Jogo]:
     return jogos_semana
 
 
+def filtrar_jogos_hoje(jogos: List[Jogo], agora: Optional[datetime] = None) -> List[Jogo]:
+    """
+    Filtra jogos que acontecem no dia atual.
+
+    Args:
+        jogos: Lista de jogos
+        agora: Datetime de referência (opcional, útil para testes)
+
+    Returns:
+        Lista com jogos de hoje
+    """
+    agora = agora or datetime.now()
+    jogos_hoje = []
+
+    for jogo in jogos:
+        data_jogo = _parse_data_jogo(jogo)
+        if data_jogo and data_jogo.date() == agora.date():
+            jogos_hoje.append(jogo)
+
+    return jogos_hoje
+
+
+def _parse_data_fim_jogo(jogo: Jogo, data_inicio: Optional[datetime] = None) -> Optional[datetime]:
+    """
+    Extrai datetime de fim de jogo, com fallback para +2h após o início.
+
+    Args:
+        jogo: Objeto Jogo
+        data_inicio: Datetime de início já parseado (opcional)
+
+    Returns:
+        datetime de fim ou None se não conseguir calcular
+    """
+    try:
+        if jogo.data_fim_iso:
+            data_fim_str = jogo.data_fim_iso.replace("-03:00", "")
+            return datetime.fromisoformat(data_fim_str)
+
+        if data_inicio:
+            return data_inicio + timedelta(hours=2)
+    except Exception as e:
+        logger.warning(f"Erro ao parsear data de fim do jogo: {e}")
+
+    return None
+
+
+def obter_status_jogo(jogo: Jogo, agora: Optional[datetime] = None) -> Tuple[str, Optional[int]]:
+    """
+    Determina o status temporal do jogo.
+
+    Regras:
+    - planejado: antes do início
+    - ao_vivo: início <= agora < fim
+    - finalizado: após fim
+
+    Args:
+        jogo: Objeto Jogo
+        agora: Datetime de referência (opcional, útil para testes)
+
+    Returns:
+        Tupla (status_jogo, tempo_decorrido_minutos)
+    """
+    agora = agora or datetime.now()
+    data_inicio = _parse_data_jogo(jogo)
+
+    if not data_inicio:
+        return "planejado", None
+
+    data_fim = _parse_data_fim_jogo(jogo, data_inicio=data_inicio)
+    if not data_fim:
+        data_fim = data_inicio + timedelta(hours=2)
+
+    if agora < data_inicio:
+        return "planejado", None
+
+    if data_inicio <= agora < data_fim:
+        tempo_decorrido = int((agora - data_inicio).total_seconds() // 60)
+        return "ao_vivo", max(tempo_decorrido, 0)
+
+    return "finalizado", None
+
+
+def obter_jogo_hoje_para_exibicao(
+    jogos: List[Jogo],
+    agora: Optional[datetime] = None,
+) -> Tuple[Optional[Jogo], str, Optional[int]]:
+    """
+    Seleciona um jogo de hoje para exibição, priorizando jogo ao vivo.
+
+    Args:
+        jogos: Lista total de jogos
+        agora: Datetime de referência (opcional, útil para testes)
+
+    Returns:
+        Tupla (jogo, status_jogo, tempo_decorrido_minutos)
+    """
+    agora = agora or datetime.now()
+    jogos_hoje = ordenar_jogos(filtrar_jogos_hoje(jogos, agora=agora))
+
+    if not jogos_hoje:
+        return None, "sem_jogo_hoje", None
+
+    for jogo in jogos_hoje:
+        status_jogo, tempo_decorrido = obter_status_jogo(jogo, agora=agora)
+        if status_jogo == "ao_vivo":
+            return jogo, status_jogo, tempo_decorrido
+
+    jogo = jogos_hoje[0]
+    status_jogo, tempo_decorrido = obter_status_jogo(jogo, agora=agora)
+    return jogo, status_jogo, tempo_decorrido
+
+
 def _garantir_diretorio_cache():
     """Garante que o diretório de cache existe."""
     CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)

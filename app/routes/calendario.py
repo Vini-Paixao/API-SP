@@ -10,6 +10,7 @@ from app.config import get_settings, Settings
 from app.models import (
     CalendarioResponse,
     ProximoJogoResponse,
+    JogoAoVivoResponse,
     ErrorResponse,
     CacheInfoResponse,
     MarcarJogoRequest,
@@ -21,6 +22,7 @@ from app.scraper import (
     ordenar_jogos,
     filtrar_jogos_futuros,
     filtrar_jogos_semana,
+    obter_jogo_hoje_para_exibicao,
     marcar_jogo_no_calendario,
     desmarcar_jogo_do_calendario,
     obter_jogos_no_calendario,
@@ -152,6 +154,54 @@ async def proximo_jogo(
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao buscar próximo jogo: {str(e)}"
+        )
+
+
+@router.get(
+    "/jogos/hoje/ao-vivo",
+    response_model=JogoAoVivoResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "API Key inválida"},
+        500: {"model": ErrorResponse, "description": "Erro interno"},
+    },
+    summary="Jogo de hoje (status ao vivo)",
+    description="""
+    Retorna um jogo do dia com status temporal para uso em apps e dashboards.
+
+    Regras de status:
+    - planejado: jogo ainda não iniciou
+    - ao_vivo: início <= agora < fim estimado
+    - finalizado: jogo já terminou
+    - sem_jogo_hoje: não há jogo na data atual
+    """
+)
+async def jogo_hoje_ao_vivo(
+    force_refresh: bool = Query(
+        False,
+        description="Se True, ignora o cache e faz novo scraping"
+    ),
+    _: bool = Depends(verificar_api_key)
+):
+    """Retorna jogo de hoje com status temporal, priorizando jogo ao vivo."""
+    try:
+        jogos, from_cache = await scrape_calendario(force_refresh=force_refresh)
+
+        # Seleciona jogo de hoje, priorizando o que estiver ao vivo agora
+        jogo, status_jogo, tempo_decorrido = obter_jogo_hoje_para_exibicao(jogos)
+
+        return JogoAoVivoResponse(
+            sucesso=True,
+            jogo=jogo,
+            status_jogo=status_jogo,
+            tempo_decorrido_minutos=tempo_decorrido,
+            atualizado_em=datetime.now(),
+            cache=from_cache,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao buscar jogo de hoje ao vivo: {str(e)}"
         )
 
 

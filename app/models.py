@@ -60,6 +60,23 @@ class ProximoJogoResponse(BaseModel):
     cache: bool = Field(False, description="Indica se os dados vieram do cache")
 
 
+class JogoAoVivoResponse(BaseModel):
+    """Response do endpoint de jogo ao vivo hoje."""
+
+    sucesso: bool = Field(..., description="Indica se a requisição foi bem sucedida")
+    jogo: Optional[Jogo] = Field(None, description="Jogo de hoje selecionado para exibição")
+    status_jogo: Optional[str] = Field(
+        None,
+        description="Status temporal do jogo: sem_jogo_hoje, planejado, ao_vivo ou finalizado"
+    )
+    tempo_decorrido_minutos: Optional[int] = Field(
+        None,
+        description="Tempo decorrido desde o início do jogo em minutos (quando aplicável)"
+    )
+    atualizado_em: datetime = Field(..., description="Timestamp da última atualização")
+    cache: bool = Field(False, description="Indica se os dados vieram do cache")
+
+
 class ErrorResponse(BaseModel):
     """Response de erro."""
     

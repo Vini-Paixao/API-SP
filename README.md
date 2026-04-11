@@ -8,6 +8,7 @@ API de Web Scraping para extrair jogos do calendário do São Paulo FC usando [F
 - **GET /api/jogos/semana** - Retorna jogos das próximas N semanas
 - **GET /api/jogos/semana/pendentes** - Jogos da semana não sincronizados (ideal para n8n)
 - **GET /api/proximo-jogo** - Retorna apenas o próximo jogo
+- **GET /api/jogos/hoje/ao-vivo** - Retorna jogo do dia com status (planejado, ao_vivo ou finalizado)
 - **GET /api/jogos/pendentes** - Jogos não sincronizados com Google Calendar
 - **GET /api/jogos/calendario** - Jogos já sincronizados
 - **POST /api/jogos/{id}/marcar-calendario** - Marca jogo como sincronizado
